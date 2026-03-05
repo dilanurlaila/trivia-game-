@@ -108,16 +108,17 @@ For simplicity, the admin panel currently **does not implement authentication**,
 
 ## 📸 Screenshots
 
-You can add screenshots here later.
-
 Example:
 
 ```
-/assets/Projector-Leaderboard.png
-/assets/screenshot-main menu.png
-/assets/dashboard-admin.png
-```
+### Game Interface
+![Game Screenshot](assets/screenshot-main menu.png)
+![Game Screenshot](/assets/dashboard-admin.png)
 
+### Leaderboard
+![Leaderboard Screenshot](assets/Projector-Leaderboard.png)
+
+```
 ---
 
 ## 📜 License
