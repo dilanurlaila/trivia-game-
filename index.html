@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UML Trivia Challenge - RPL</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Russo+One&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Background Animation -->
+    <div id="background-wrap">
+      <div class="bubble x1"></div>
+      <div class="bubble x2"></div>
+      <div class="bubble x3"></div>
+      <div class="bubble x4"></div>
+      <div class="bubble x5"></div>
+      <div class="bubble x6"></div>
+      <div class="bubble x7"></div>
+      <div class="bubble x8"></div>
+      <div class="bubble x9"></div>
+      <div class="bubble x10"></div>
+    </div>
+
+    <!-- Screen 0: Welcome -->
+    <div id="welcomeScreen" class="screen">
+      <div class="card welcome-card">
+        <h1>UML TRIVIA<br />CHALLENGE</h1>
+        <p>Klik di mana saja untuk memulai</p>
+      </div>
+    </div>
+
+    <!-- Screen 1: Setup -->
+    <div id="setupScreen" class="screen" style="display: none">
+      <div class="card setup-card">
+        <div class="logo"><div class="dot">WELCOME TO QUIZ</div></div>
+        <div>
+          <h1 class="main-title">UML Trivia Challenge</h1>
+        </div>
+        <div class="form-group fade-in-2">
+          <input type="text" id="playerName" placeholder="Masukkan Nama Anda" />
+        </div>
+        <div class="photo-group fade-in-3">
+          <div id="photoPreview"><p>Selfie Anda</p></div>
+          <div class="photo-buttons">
+            <button id="uploadPhotoBtn" class="btn ghost">Unggah Foto</button>
+            <button id="takePhotoBtn" class="btn ghost">Ambil Selfie</button>
+            <input
+              type="file"
+              id="photoInput"
+              accept="image/*"
+              style="display: none"
+            />
+          </div>
+        </div>
+        <div class="form-group fade-in-4">
+          <select id="kelasSelect" class="select">
+            <option value="scores_kelasA">Kelas A</option>
+            <option value="scores_kelasB">Kelas B</option>
+            <option value="scores_kelasC">Kelas C</option>
+            <option value="scores_kelasD">Kelas D</option>
+            <option value="scores_kelasE">Kelas E</option>
+            <option value="scores_kelasF">Kelas F</option>
+            <option value="scores_kelasG">Kelas G</option>
+            <option value="scores_kelasH">Kelas H</option>
+            <option value="scores_kelasI">Kelas I</option>
+            <option value="scores_kelasJ">Kelas J</option>
+          </select>
+        </div>
+        <input type="hidden" id="gameMode" value="classic" />
+        <div class="status-message-container">
+          <p id="quizStatusMessage" class="small status-message"></p>
+        </div>
+        <button id="startBtn" class="btn fade-in-5" disabled>
+          Mulai Tantangan
+        </button>
+        <button id="viewLeaderboardBtn" class="btn ghost fade-in-6">
+          Lihat Leaderboard
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen 2: Loading -->
+    <div id="loadingScreen" class="screen" style="display: none">
+      <div class="spinner"></div>
+      <p>Mempersiapkan Soal...</p>
+    </div>
+
+    <!-- Screen 3: Game -->
+    <div id="gameScreen" class="screen" style="display: none">
+      <div class="game-header">
+        <div class="timer" id="globalTimer">15:00</div>
+        <div class="q-counter">
+          Soal <span id="qIdx">1</span> dari <span id="qTotal">15</span>
+        </div>
+      </div>
+      <div class="card game-card">
+        <div id="qImage"></div>
+        <h2 id="qText"></h2>
+        <div id="options"></div>
+        <div class="match-container" id="matchContainer"></div>
+      </div>
+      <div class="game-footer">
+        <button id="prevBtn" class="btn ghost">Sebelumnya</button>
+        <button id="nextBtn" class="btn">Selanjutnya</button>
+        <button id="finishBtn" class="btn" style="display: none">
+          Selesaikan
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen 4: Review -->
+    <div id="reviewScreen" class="screen" style="display: none">
+      <div class="card review-card">
+        <h2>Tinjau Jawaban Anda</h2>
+        <div id="reviewList" class="review-list"></div>
+        <button id="goToLeaderboardBtn" class="btn">Lihat Hasil Akhir</button>
+      </div>
+    </div>
+
+    <!-- Screen 5: Results -->
+    <div id="resultsScreen" class="screen" style="display: none">
+      <div class="card result-card">
+        <h2>Hasil Akhir</h2>
+        <div class="final-score" id="finalScoreDisplay">100</div>
+        <div class="leaderboard-mini" id="leaderList"></div>
+        <div class="button-group">
+          <button id="playAgainBtn" class="btn">Main Lagi</button>
+          <button id="resetLeaderboardBtn" class="btn ghost">
+            Reset Leaderboard (Admin)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: Leaderboard View -->
+    <div id="leaderboardScreen" class="screen" style="display: none">
+      <div class="card leaderboard-view-card">
+        <h2>Leaderboard</h2>
+        <select id="leaderboardKelasSelect" class="select">
+          <option value="scores_kelasA">Kelas A</option>
+          <option value="scores_kelasB">Kelas B</option>
+          <option value="scores_kelasC">Kelas C</option>
+          <option value="scores_kelasD">Kelas D</option>
+          <option value="scores_kelasE">Kelas E</option>
+          <option value="scores_kelasF">Kelas F</option>
+          <option value="scores_kelasG">Kelas G</option>
+          <option value="scores_kelasH">Kelas H</option>
+          <option value="scores_kelasI">Kelas I</option>
+          <option value="scores_kelasJ">Kelas J</option>
+        </select>
+        <div id="leaderboardViewList" class="leaderboard-full"></div>
+        <button id="backToSetupBtn" class="btn ghost">Kembali</button>
+      </div>
+    </div>
+
+    <!-- Audio Files -->
+    <audio id="soundClick" src="./assets/click.mp3" preload="auto"></audio>
+    <audio id="soundCorrect" src="./assets/correct.mp3" preload="auto"></audio>
+    <audio id="soundWrong" src="./assets/wrong.mp3" preload="auto"></audio>
+    <audio id="soundSuccess" src="./assets/success.mp3" preload="auto"></audio>
+    <audio id="soundFail" src="./assets/fail.mp3" preload="auto"></audio>
+    <audio
+      id="soundMusicLobby"
+      src="./assets/music-lobby.mp3"
+      loop
+      preload="auto"
+    ></audio>
+    <audio
+      id="soundMusicGame"
+      src="./assets/music.mp3"
+      loop
+      preload="auto"
+    ></audio>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
