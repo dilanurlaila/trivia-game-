@@ -109,7 +109,10 @@ For simplicity, the admin panel currently **does not implement authentication**,
 ## 📸 Screenshots
 
 ### Game Interface
-![Game Screenshot](assets/screenshot-main menu.png)
+<img src="assets/main-menu.png" width="600">
+<img src="assets/dashboard-admin.png" width="600">
+<img src="assets/Projector-Leaderboard.png" width="600">
+![Game Screenshot](assets/main-menu.png)
 ![Game Screenshot](/assets/dashboard-admin.png)
 
 ### Leaderboard
