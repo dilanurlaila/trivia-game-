@@ -1,6 +1,5 @@
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  #apiKey: "AIzaSyD3Lh0DlmwAToER7RxqBUwlV7IaFyzEvBs",
   apiKey: "AIzaSyBuBxEwqVA4d8UV0zHCrealTKvuGdJJfu4",
   authDomain: "tirivagames-dilanurlaila.firebaseapp.com",
   databaseURL:
