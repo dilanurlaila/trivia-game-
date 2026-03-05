@@ -113,8 +113,9 @@ You can add screenshots here later.
 Example:
 
 ```
-/assets/screenshot-game.png
-/assets/screenshot-leaderboard.png
+/assets/Projector-Leaderboard.png
+/assets/screenshot-main menu.png
+/assets/dashboard-admin.png
 ```
 
 ---
