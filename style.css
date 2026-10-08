@@ -67,6 +67,26 @@ input[type="text"], .select {
 @keyframes spin { to { transform: rotate(360deg); } }
 .game-header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; font-size: 1.2rem; }
 .game-card { max-width: 800px; }
+#qImage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 1rem;
+  min-height: 120px;
+  overflow: hidden;
+}
+
+#qImage img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
 #options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
 .opt { padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; transition: all 0.2s; text-align: left; }
 .opt:hover { background: rgba(255, 255, 255, 0.05); }
