@@ -120,7 +120,7 @@ input[type="text"], .select {
 #background-wrap { position: fixed; bottom: 0; left: 0; right: 0; top: 0; z-index: -1; }
 .bubble { position: absolute; bottom: -100px; background: rgba(6, 246, 255, 0.1); border-radius: 50%; animation: bubble-rise 25s infinite; width: 40px; height: 40px; }
 @keyframes bubble-rise{0%{bottom:-100px;transform:translateX(0)}50%{transform:translateX(100px)}100%{bottom:1080px;transform:translateX(-200px)}}
-.x1{left:5%;transform:scale(.9);animation-duration:20s;animation-delay:0s}.x2{left:15%;transform:scale(.5);animation-duration:25s;animation-delay:1s}.x3{left:25%;transform:scale(.7);animation-duration:18s;animation-delay:2s}.x4{left:35%;transform:scale(.8);animation-duration:22s;animation-delay:3s}.x5{left:45%;transform:scale(.4);animation-duration:28s;animation-delay:4s}.x6{left:55%;transform:scale(.9);animation-duration:17s;animation-delay:1s}.x7{left:65%;transform:scale(.5);animation-duration:23s;animation-delay:5s}.x8{left:75%;transform:scale(.8);animation-duration:20s;animation-delay:6s}.x9{left:85%;transform:scale(.4);animation-duration:26s;animation-delay:7s}.x10{left:95%;transform:scale(.6);animation-duration:21s;animation-delay:8s}
+.x1{left:5%;transform:scale(.9);animation-duration:20s;animation-delay:0s}.x2{left:15%;transform:scale(.5);animation-duration:25s;animation-delay:1s}.x3{left:25%;transform:scale(.7);animation-duration:30s;animation-delay:2s}.x4{left:35%;transform:scale(.4);animation-duration:22s;animation-delay:.5s}.x5{left:45%;transform:scale(.6);animation-duration:28s;animation-delay:1.5s}.x6{left:55%;transform:scale(.8);animation-duration:24s;animation-delay:.2s}.x7{left:65%;transform:scale(.5);animation-duration:26s;animation-delay:2s}.x8{left:75%;transform:scale(.7);animation-duration:23s;animation-delay:1s}.x9{left:85%;transform:scale(.6);animation-duration:29s;animation-delay:2.5s}.x10{left:95%;transform:scale(.8);animation-duration:21s;animation-delay:.5s}
 .fade-in-1{animation:fade-in .5s .2s ease-out backwards}.fade-in-2{animation:fade-in .5s .4s ease-out backwards}.fade-in-3{animation:fade-in .5s .6s ease-out backwards}.fade-in-4{animation:fade-in .5s .8s ease-out backwards}.fade-in-5{animation:fade-in .5s 1s ease-out backwards}.fade-in-6{animation:fade-in .5s 1.2s ease-out backwards}
 @keyframes fade-in{from{opacity:0;transform:translateY(10px)}}
 /* Fix scroll di mobile */
@@ -135,4 +135,198 @@ input[type="text"], .select {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ==================== QUIZ CLOSED MODAL STYLING ==================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(7, 16, 36, 0.95);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: fade-in-overlay 0.3s ease-out;
+}
 
+@keyframes fade-in-overlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.quiz-closed-card {
+  background: linear-gradient(135deg, rgba(12, 26, 50, 0.95), rgba(12, 26, 50, 0.85));
+  border: 1px solid rgba(6, 246, 255, 0.2);
+  padding: 2.5rem;
+  border-radius: 16px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 
+    0 8px 32px rgba(124, 58, 237, 0.2),
+    0 0 30px rgba(6, 246, 255, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  text-align: center;
+  animation: slide-up 0.4s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient background effect */
+.quiz-closed-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at 20% 50%,
+    rgba(6, 246, 255, 0.1) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    circle at 80% 80%,
+    rgba(124, 58, 237, 0.1) 0%,
+    transparent 50%
+  );
+  animation: gradient-shift 8s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(50px, 30px);
+  }
+}
+
+.quiz-closed-card h2 {
+  font-size: 2rem;
+  margin: 0 0 1.5rem;
+  background: linear-gradient(90deg, #ff6b6b, var(--neon));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  text-shadow: 0 0 20px rgba(255, 107, 107, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.quiz-closed-card .icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 10px rgba(6, 246, 255, 0.3));
+  animation: pulse-icon 2s ease-in-out infinite;
+}
+
+@keyframes pulse-icon {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.quiz-closed-card .message {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #e6f2ff;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.quiz-closed-card .message strong {
+  color: var(--neon);
+  font-weight: 700;
+}
+
+.quiz-closed-card .subtitle {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.quiz-closed-button {
+  background: linear-gradient(90deg, var(--neon), var(--accent));
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  color: #021018;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.quiz-closed-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.quiz-closed-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 25px rgba(124, 58, 237, 0.4);
+}
+
+.quiz-closed-button:hover::before {
+  left: 100%;
+}
+
+.quiz-closed-button:active {
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .quiz-closed-card {
+    padding: 2rem;
+    border-radius: 12px;
+  }
+  
+  .quiz-closed-card h2 {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+  }
+  
+  .quiz-closed-card .icon {
+    font-size: 3rem;
+  }
+  
+  .quiz-closed-card .message {
+    font-size: 0.95rem;
+  }
+}
