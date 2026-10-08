@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopAllMusic() { if (sounds.musicLobby) sounds.musicLobby.pause(); if (sounds.musicGame) sounds.musicGame.pause(); }
     function playLobbyMusic() { stopAllMusic(); if (sounds.musicLobby) { sounds.musicLobby.currentTime = 0; sounds.musicLobby.play().catch(e => {}); } }
     function playGameMusic() { stopAllMusic(); if (sounds.musicGame) { sounds.musicGame.currentTime = 0; sounds.musicGame.play().catch(e => {}); } }
-    const screens = { welcome: document.getElementById("welcomeScreen"), setup: document.getElementById("setupScreen"), loading: document.getElementById("loadingScreen"), game: document.getElementById("gameScreen"), review: document.getElementById("reviewScreen"), results: document.getElementById("resultsScreen"), leaderboard: document.getElementById("leaderboardScreen"), };
+    const screens = { welcome: document.getElementById("welcomeScreen"), setup: document.getElementById("setupScreen"), loading: document.getElementById("loadingScreen"), game: document.getElementById("gameScreen"), review: document.getElementById("reviewScreen"), results: document.getElementById("resultsScreen"), leaderboard: document.getElementById("leaderboardScreen") };
     const welcomeScreen = document.getElementById("welcomeScreen");
     const playerName = document.getElementById("playerName");
     const photoPreview = document.getElementById("photoPreview");
@@ -77,18 +77,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const leaderboardKelasSelect = document.getElementById("leaderboardKelasSelect");
     const leaderboardViewList = document.getElementById("leaderboardViewList");
     const backToSetupBtn = document.getElementById("backToSetupBtn");
-    
-    welcomeScreen.addEventListener('click', () => { 
-        showScreen('setup'); 
+
+    // ==================== GLOBAL QUIZ STATUS ====================
+    let isQuizActive = true;
+    let quizMonitorListener = null;
+    let quizClosedModalOpen = false;
+
+    welcomeScreen.addEventListener('click', () => {
+        showScreen('setup');
         playLobbyMusic();
     }, { once: true });
-    
+
     if (db) {
         const gameStateRef = ref(db, 'gameState');
         onValue(gameStateRef, (snapshot) => {
             const state = snapshot.val();
-            const isQuizActive = state && state.isQuizActive;
-            if (isQuizActive) {
+            const active = state && state.isQuizActive;
+            if (active) {
                 startBtn.disabled = false;
                 quizStatusMessage.textContent = 'Kuis telah dibuka. Silakan mulai!';
                 quizStatusMessage.className = 'small status-message active';
@@ -123,36 +128,133 @@ document.addEventListener('DOMContentLoaded', () => {
     function showScreen(screenName) {
       Object.values(screens).forEach((s) => (s.style.display = "none"));
       if (screens[screenName]) screens[screenName].style.display = 'flex';
-      
-      stopAllMusic(); 
-      if (['setup', 'results', 'leaderboard', 'review', 'welcome'].includes(screenName)) playLobbyMusic(); 
+
+      stopAllMusic();
+      if (['setup', 'results', 'leaderboard', 'review', 'welcome'].includes(screenName)) playLobbyMusic();
       else if (screenName === 'game') playGameMusic();
     }
 
     let state;
-    function resetState() { clearInterval(state?.timer); state = { idx: 0, score: 0, playerAnswers: [], timer: null, }; state.playerAnswers = new Array(QUESTIONS.length).fill(null); }
-    
+    function resetState() {
+      clearInterval(state?.timer);
+      state = { idx: 0, score: 0, playerAnswers: [], timer: null };
+      state.playerAnswers = new Array(QUESTIONS.length).fill(null);
+    }
+
     let lastPhotoBase64 = null;
     uploadPhotoBtn.addEventListener("click", () => { playSound('click'); photoInput.click(); });
     photoInput.addEventListener("change", async (ev) => { const f = ev.target.files[0]; if (!f) return; lastPhotoBase64 = await toBase64(f); photoPreview.innerHTML = `<img src="${lastPhotoBase64}" />`; });
-    takePhotoBtn.addEventListener("click", async () => { playSound('click'); try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); const video = document.createElement("video"); video.autoplay = true; video.srcObject = stream; const modal = document.createElement("div"); Object.assign(modal.style, { position: "fixed", left: "0", top: "0", right: "0", bottom: "0", background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: "1000" }); const box = document.createElement("div"); Object.assign(box.style, { background: "#0c1a32", padding: "16px", borderRadius: "12px", textAlign: "center" }); video.style.borderRadius = "8px"; video.style.maxWidth = "calc(100vw - 40px)"; box.appendChild(video); const buttonContainer = document.createElement("div"); buttonContainer.style.marginTop = "12px"; const snapBtn = document.createElement("button"); snapBtn.textContent = "Ambil Foto"; snapBtn.className = "btn"; const cancelBtn = document.createElement("button"); cancelBtn.textContent = "Batal"; cancelBtn.className = "btn ghost"; cancelBtn.style.marginLeft = "8px"; buttonContainer.appendChild(snapBtn); buttonContainer.appendChild(cancelBtn); box.appendChild(buttonContainer); modal.appendChild(box); document.body.appendChild(modal); const cleanup = () => { stream.getTracks().forEach((track) => track.stop()); modal.remove(); }; snapBtn.onclick = () => { playSound('click'); const canvas = document.createElement("canvas"); canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext("2d").drawImage(video, 0, 0); lastPhotoBase64 = canvas.toDataURL("image/jpeg", 0.8); photoPreview.innerHTML = `<img src="${lastPhotoBase64}" />`; cleanup(); }; cancelBtn.onclick = cleanup; } catch (err) { console.error(err); alert("Tidak dapat mengakses kamera."); } });
+    takePhotoBtn.addEventListener("click", async () => { playSound('click'); try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); const video = document.createElement('video'); video.srcObject = stream; video.play(); const modal = document.createElement('div'); modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;'; const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240; const ctx = canvas.getContext('2d'); const captureBtn = document.createElement('button'); captureBtn.textContent = 'Foto'; captureBtn.style.cssText = 'position:absolute;bottom:20px;padding:10px 20px;background:#007bff;color:white;border:none;border-radius:5px;cursor:pointer;'; const retakeBtn = document.createElement('button'); retakeBtn.textContent = 'Ulang'; retakeBtn.style.cssText = 'position:absolute;bottom:20px;right:20px;padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:5px;cursor:pointer;'; const container = document.createElement('div'); container.style.cssText = 'position:relative;'; container.appendChild(video); container.appendChild(captureBtn); container.appendChild(retakeBtn); modal.appendChild(container); document.body.appendChild(modal); captureBtn.onclick = () => { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); lastPhotoBase64 = canvas.toDataURL('image/png'); photoPreview.innerHTML = `<img src="${lastPhotoBase64}" />`; stream.getTracks().forEach(t => t.stop()); document.body.removeChild(modal); }; retakeBtn.onclick = () => { stream.getTracks().forEach(t => t.stop()); document.body.removeChild(modal); }; } catch (e) { alert("Tidak bisa akses kamera."); } });
     const toBase64 = (file) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-    
+
     function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
-    
-    startBtn.addEventListener("click", async () => { 
-        if (!playerName.value) return alert("Masukkan nama dulu."); 
-        if (!lastPhotoBase64) return alert("Ambil atau upload selfie."); 
-        playSound('click'); 
-        showScreen("loading"); 
-        const questionsLoaded = await loadQuestions(); 
-        if(!questionsLoaded || QUESTIONS.length === 0) { 
+
+    // ==================== MONITOR QUIZ STATUS SAAT BERMAIN ====================
+    function startMonitoringQuizStatus() {
+        if (!db) return;
+        stopMonitoringQuizStatus();
+
+        const gameStateRef = ref(db, 'gameState');
+        quizMonitorListener = onValue(gameStateRef, (snapshot) => {
+            const gameState = snapshot.val();
+            const wasActive = isQuizActive;
+            isQuizActive = gameState && gameState.isQuizActive;
+
+            if (wasActive && !isQuizActive && screens.game.style.display === 'flex') {
+                handleQuizClosed();
+            }
+        });
+    }
+
+    function stopMonitoringQuizStatus() {
+        if (quizMonitorListener) {
+            quizMonitorListener();
+            quizMonitorListener = null;
+        }
+    }
+
+    function handleQuizClosed() {
+        if (quizClosedModalOpen) return;
+        quizClosedModalOpen = true;
+
+        playSound('wrong');
+        clearInterval(state?.timer);
+        stopAllMusic();
+        autoSubmitAnswers();
+        showQuizClosedModal();
+    }
+
+    function autoSubmitAnswers() {
+        if (!state || !QUESTIONS.length) return;
+        calculateFinalScore();
+        const finalScore = TOTAL_POSSIBLE_SCORE > 0 ? Math.round((state.score / TOTAL_POSSIBLE_SCORE) * 100) : 0;
+
+        if (db && finalScore >= 0) {
+            push(ref(db, kelasSelect.value), {
+                name: playerName.value,
+                score: finalScore,
+                photo: lastPhotoBase64 || "",
+                ts: Date.now(),
+                reason: "auto_submitted_quiz_closed"
+            }).catch((err) => console.error("Error auto-submitting:", err));
+        }
+    }
+
+    function showQuizClosedModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'quiz-closed-card';
+
+        card.innerHTML = `
+            <div class="icon">⏰</div>
+            <h2>Kuis Ditutup</h2>
+            <p class="message">
+                <strong>Waktu kuis telah diakhiri oleh admin.</strong> Kuis selesai dan jawaban kamu telah <strong>otomatis disimpan</strong>.
+            </p>
+            <p class="subtitle">
+                Jawaban yang sudah kamu isi akan dinilai. Terima kasih telah mengikuti kuis ini.
+            </p>
+        `;
+
+        const button = document.createElement('button');
+        button.className = 'quiz-closed-button';
+        button.textContent = 'Kembali ke Menu Awal';
+        button.onclick = () => {
+            document.body.removeChild(modal);
+            quizClosedModalOpen = false;
+            stopMonitoringQuizStatus();
+            resetState();
+            showScreen('setup');
+        };
+
+        card.appendChild(button);
+        modal.appendChild(card);
+        document.body.appendChild(modal);
+    }
+
+    startBtn.addEventListener("click", async () => {
+        if (!playerName.value) return alert("Masukkan nama dulu.");
+        if (!lastPhotoBase64) return alert("Ambil atau upload selfie.");
+        playSound('click');
+        showScreen("loading");
+        const questionsLoaded = await loadQuestions();
+        if(!questionsLoaded || QUESTIONS.length === 0) {
             alert("Gagal memuat soal, kuis tidak bisa dimulai.");
-            showScreen("setup"); 
-            return; 
-        } 
-        shuffle(QUESTIONS); 
-        setTimeout(() => { resetState(); navigateToQuestion(0); startGlobalTimer(); showScreen("game"); }, 1500); 
+            showScreen("setup");
+            return;
+        }
+        shuffle(QUESTIONS);
+        setTimeout(() => {
+            resetState();
+            isQuizActive = true;
+            quizClosedModalOpen = false;
+            startMonitoringQuizStatus();
+            navigateToQuestion(0);
+            startGlobalTimer();
+            showScreen("game");
+        }, 1500);
     });
 
     viewLeaderboardBtn.addEventListener('click', () => { playSound('click'); showScreen('leaderboard'); fetchLeaderboard(leaderboardKelasSelect.value, leaderboardViewList); });
@@ -170,47 +272,56 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     // --- Akhir Fitur Anti-Curang ---
 
-    prevBtn.addEventListener('click', () => { if (state.idx > 0) { playSound('click'); navigateToQuestion(state.idx - 1); } });
-    nextBtn.addEventListener('click', () => { if (state.idx < QUESTIONS.length - 1) { playSound('click'); navigateToQuestion(state.idx + 1); } });
-    finishBtn.addEventListener('click', () => { playSound('click'); if(confirm("Yakin ingin menyelesaikan kuis?")) finishQuiz(); });
+    prevBtn.addEventListener('click', () => { if (state && state.idx > 0) { playSound('click'); navigateToQuestion(state.idx - 1); } });
+    nextBtn.addEventListener('click', () => { if (state && state.idx < QUESTIONS.length - 1) { playSound('click'); navigateToQuestion(state.idx + 1); } });
+    finishBtn.addEventListener('click', () => {
+        playSound('click');
+
+        if (!isQuizActive) {
+            alert("⏰ Kuis telah ditutup oleh admin.\nJawaban Anda telah otomatis disimpan.");
+            return;
+        }
+
+        if(confirm("Yakin ingin menyelesaikan kuis?")) finishQuiz();
+    });
     playAgainBtn.addEventListener("click", () => { playSound('click'); resetState(); showScreen("setup"); });
-    resetLeaderboardBtn.addEventListener('click', () => { playSound('click'); const adminPass = prompt("Masukkan kata sandi admin:"); if (adminPass === 'admin123') { const node = kelasSelect.value; if (confirm(`Yakin ingin mereset SEMUA skor untuk leaderboard ${node}?`)) { if (db) remove(ref(db, node)).then(() => alert('Leaderboard direset.')).catch((e) => alert('Gagal.')); else alert('Database tidak terhubung.'); } } else if(adminPass !== null) alert('Kata sandi salah.'); });
+    resetLeaderboardBtn.addEventListener('click', () => { playSound('click'); const adminPass = prompt("Masukkan kata sandi admin:"); if (adminPass === 'admin123') { const node = kelasSelect.value; if(node) { remove(ref(db, node)).then(() => alert("Leaderboard direset!")).catch(e => console.error(e)); } } });
     goToLeaderboardBtn.addEventListener('click', () => { playSound('click'); showScreen('results'); renderResults(); });
-    
-    function navigateToQuestion(index) { 
-        state.idx = index; 
-        const cur = QUESTIONS[index]; 
-        qIdx.textContent = index + 1; 
-        qTotal.textContent = QUESTIONS.length; 
-        qText.textContent = cur.q; 
-        qImage.innerHTML = cur.img ? `<img src="${cur.img}" />` : ""; 
-        optionsEl.style.display = 'none'; 
-        matchContainer.style.display = 'none'; 
-        if (cur.type === 'mcq') renderMCQ(cur, state.playerAnswers[index]); 
-        else if (cur.type === 'match') renderMatch(cur, state.playerAnswers[index]); 
-        prevBtn.style.visibility = index === 0 ? 'hidden' : 'visible'; 
-        nextBtn.style.display = index === QUESTIONS.length - 1 ? 'none' : 'block'; 
-        finishBtn.style.display = index === QUESTIONS.length - 1 ? 'block' : 'none'; 
+
+    function navigateToQuestion(index) {
+        state.idx = index;
+        const cur = QUESTIONS[index];
+        qIdx.textContent = index + 1;
+        qTotal.textContent = QUESTIONS.length;
+        qText.textContent = cur.q;
+        qImage.innerHTML = cur.img ? `<img src="${cur.img}" />` : "";
+        optionsEl.style.display = 'none';
+        matchContainer.style.display = 'none';
+        if (cur.type === 'mcq') renderMCQ(cur, state.playerAnswers[index]);
+        else if (cur.type === 'match') renderMatch(cur, state.playerAnswers[index]);
+        prevBtn.style.visibility = index === 0 ? 'hidden' : 'visible';
+        nextBtn.style.display = index === QUESTIONS.length - 1 ? 'none' : 'block';
+        finishBtn.style.display = index === QUESTIONS.length - 1 ? 'block' : 'none';
     }
 
-    function renderMCQ(cur, prevAns) { 
-        optionsEl.style.display = 'grid'; 
-        optionsEl.innerHTML = ""; 
-        cur.options.forEach((opt, i) => { 
-            const d = document.createElement("button"); 
-            d.className = "btn ghost opt"; 
-            d.textContent = String.fromCharCode(65 + i) + ". " + opt; 
-            if (prevAns === i) d.classList.add('selected'); 
-            d.onclick = () => selectMCQOption(i, d); 
-            optionsEl.appendChild(d); 
-        }); 
+    function renderMCQ(cur, prevAns) {
+        optionsEl.style.display = 'grid';
+        optionsEl.innerHTML = "";
+        cur.options.forEach((opt, i) => {
+            const d = document.createElement("button");
+            d.className = "btn ghost opt";
+            d.textContent = String.fromCharCode(65 + i) + ". " + opt;
+            if (prevAns === i) d.classList.add('selected');
+            d.onclick = () => selectMCQOption(i, d);
+            optionsEl.appendChild(d);
+        });
     }
 
-    function selectMCQOption(selIdx, selEl) { 
-        playSound('click'); 
-        state.playerAnswers[state.idx] = selIdx; 
-        for (let opt of optionsEl.children) opt.classList.remove('selected'); 
-        selEl.classList.add('selected'); 
+    function selectMCQOption(selIdx, selEl) {
+        playSound('click');
+        state.playerAnswers[state.idx] = selIdx;
+        for (let opt of optionsEl.children) opt.classList.remove('selected');
+        selEl.classList.add('selected');
     }
 
     // --- RENDER MATCH with TOUCH SUPPORT ---
@@ -253,118 +364,136 @@ document.addEventListener('DOMContentLoaded', () => {
         function createLabel(text) { const labelDiv = document.createElement('div'); labelDiv.className = 'match-label'; labelDiv.textContent = text; labelDiv.draggable = true; labelDiv.dataset.label = text; return labelDiv; }
         let draggedEl = null, ghostEl = null, currentDropZone = null;
         function handleDragStart(e) { draggedEl = e.target; e.dataTransfer?.setData('text/plain', null); }
-        function handleTouchStart(e) { e.preventDefault(); draggedEl = e.target.closest('.match-label'); if (!draggedEl) return; ghostEl = draggedEl.cloneNode(true); ghostEl.classList.add('ghost'); document.body.appendChild(ghostEl); const touch = e.touches[0]; moveGhost(touch.pageX, touch.pageY); }
+        function handleTouchStart(e) { e.preventDefault(); draggedEl = e.target.closest('.match-label'); if (!draggedEl) return; ghostEl = draggedEl.cloneNode(true); ghostEl.classList.add('ghost'); ghostEl.style.position = 'fixed'; ghostEl.style.pointerEvents = 'none'; ghostEl.style.zIndex = '10000'; document.body.appendChild(ghostEl); }
         function moveGhost(x, y) { if (!ghostEl) return; ghostEl.style.transform = `translate(${x}px, ${y}px)`; }
-        function handleTouchMove(e) { e.preventDefault(); if (!ghostEl) return; const touch = e.touches[0]; moveGhost(touch.pageX, touch.pageY); ghostEl.style.display = 'none'; const elUnder = document.elementFromPoint(touch.clientX, touch.clientY); ghostEl.style.display = ''; const dropZone = elUnder?.closest('.drop-zone'); if (currentDropZone !== dropZone) { currentDropZone?.classList.remove('over'); currentDropZone = dropZone; currentDropZone?.classList.add('over'); } }
+        function handleTouchMove(e) { e.preventDefault(); if (!ghostEl) return; const touch = e.touches[0]; moveGhost(touch.pageX, touch.pageY); ghostEl.style.display = 'none'; const elUnder = document.elementFromPoint(touch.pageX, touch.pageY); ghostEl.style.display = ''; if (elUnder?.classList.contains('drop-zone')) { currentDropZone?.classList.remove('over'); currentDropZone = elUnder; currentDropZone.classList.add('over'); } }
         function handleTouchEnd(e) { if (currentDropZone) { dropElement(currentDropZone); } ghostEl?.remove(); ghostEl = null; draggedEl = null; currentDropZone?.classList.remove('over'); currentDropZone = null; }
-        function dropElement(zone) { if (!draggedEl) return; if (zone.hasChildNodes()) { labelsCol.appendChild(zone.firstChild); } zone.appendChild(draggedEl); zone.classList.add('filled'); if (!state.playerAnswers[state.idx] || typeof state.playerAnswers[state.idx] !== 'object') { state.playerAnswers[state.idx] = {}; } state.playerAnswers[state.idx][zone.dataset.index] = draggedEl.dataset.label; playSound('click'); }
+        function dropElement(zone) { if (!draggedEl) return; if (zone.hasChildNodes()) { labelsCol.appendChild(zone.firstChild); } zone.appendChild(draggedEl); zone.classList.add('filled'); if (!state.playerAnswers[state.idx]) state.playerAnswers[state.idx] = {}; state.playerAnswers[state.idx][zone.dataset.index] = draggedEl.dataset.label; }
         matchContainer.querySelectorAll('.match-label').forEach(label => { label.addEventListener('dragstart', handleDragStart); });
         matchContainer.querySelectorAll('.drop-zone').forEach(zone => { zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); }); zone.addEventListener('dragleave', () => zone.classList.remove('over')); zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); dropElement(zone); }); });
         matchContainer.querySelectorAll('.match-label').forEach(label => { label.addEventListener('touchstart', handleTouchStart, { passive: false }); });
         document.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.addEventListener('touchend', handleTouchEnd);
     }
-    
-    function finishQuiz() { clearInterval(state.timer); calculateFinalScore(); showScreen('review'); renderReviewScreen(); }
-    
-    function calculateFinalScore() { 
-        let correctPoints = 0; 
-        QUESTIONS.forEach((q, i) => { 
-            const ans = state.playerAnswers[i]; 
-            if (ans === null || ans === undefined) return; 
-            if (q.type === 'mcq') { 
-                if(ans === q.answer) correctPoints++; 
-            } else if (q.type === 'match' && typeof ans === 'object') { 
-                Object.keys(ans).forEach(imgIndex => { 
-                    if (ans[imgIndex] === q.match_labels[imgIndex]) { correctPoints++; } 
-                }); 
-            } 
-        }); 
-        state.score = correctPoints; 
-    }
-    
-    function renderReviewScreen() { 
-        reviewList.innerHTML = ''; 
-        QUESTIONS.forEach((q, i) => { 
-            const ans = state.playerAnswers[i]; 
-            const item = document.createElement('div'); 
-            item.className = 'review-item'; 
-            let ansHTML = ''; 
-            if (q.type === 'mcq') { 
-                const correctTxt = q.options[q.answer]; 
-                const playerTxt = ans !== null ? q.options[ans] : "Tidak Dijawab"; 
-                const isCorrect = ans === q.answer; 
-                ansHTML = `<div class="your-answer ${isCorrect ? 'correct' : ''}">Jawaban Anda: ${escapeHtml(playerTxt)}</div> ${!isCorrect ? `<div class="correct-answer">Jawaban Benar: ${escapeHtml(correctTxt)}</div>` : ''}`; 
-            } else if (q.type === 'match') { 
-                ansHTML = '<div class="review-match-container">'; 
-                q.match_items.forEach((imgSrc, imgIndex) => { 
-                    const playerLabel = ans && ans[imgIndex] ? ans[imgIndex] : "Tidak Dijawab"; 
-                    const correctLabel = q.match_labels[imgIndex]; 
-                    const isCorrect = playerLabel === correctLabel; 
-                    ansHTML += `<div class="review-match-item"><img src="${imgSrc}" /><div class="your-answer ${isCorrect ? 'correct' : ''}">${escapeHtml(playerLabel)}</div>${!isCorrect ? `<div class="correct-answer">${escapeHtml(correctLabel)}</div>` : ''}</div>`; 
-                }); 
-                ansHTML += '</div>'; 
-            } 
-            item.innerHTML = `<div class="q-text"><b>${i+1}. ${escapeHtml(q.q)}</b></div>${ansHTML}`; 
-            reviewList.appendChild(item); 
-        }); 
+
+    function finishQuiz() {
+        if (!isQuizActive) {
+            alert("⏰ Kuis telah ditutup oleh admin.\nJawaban Anda telah otomatis disimpan.");
+            return;
+        }
+        clearInterval(state.timer);
+        calculateFinalScore();
+        showScreen('review');
+        renderReviewScreen();
+        stopMonitoringQuizStatus();
     }
 
-    function renderResults() { 
-        const finalScore = TOTAL_POSSIBLE_SCORE > 0 ? Math.round((state.score / TOTAL_POSSIBLE_SCORE) * 100) : 0; 
-        if (finalScore >= 50) playSound('success'); 
-        else playSound('fail'); 
-        finalScoreDisplay.textContent = finalScore; 
-        fetchLeaderboard(kelasSelect.value, leaderList, playAgainBtn); 
-        if (db) push(ref(db, kelasSelect.value), { name: playerName.value, score: finalScore, photo: lastPhotoBase64 || "", ts: Date.now() }).catch((err) => console.error(err)); 
+    function calculateFinalScore() {
+        let correctPoints = 0;
+        QUESTIONS.forEach((q, i) => {
+            const ans = state.playerAnswers[i];
+            if (ans === null || ans === undefined) return;
+            if (q.type === 'mcq') {
+                if(ans === q.answer) correctPoints++;
+            } else if (q.type === 'match' && typeof ans === 'object') {
+                Object.keys(ans).forEach(imgIndex => {
+                    if (ans[imgIndex] === q.match_labels[imgIndex]) { correctPoints++; }
+                });
+            }
+        });
+        state.score = correctPoints;
     }
 
-    function startGlobalTimer() { 
-        let timeLeft = 15 * 60; 
-        clearInterval(state.timer); 
-        globalTimerEl.textContent = "15:00"; // Set initial display
-        state.timer = setInterval(() => { 
-            timeLeft--; 
-            const mins = Math.floor(timeLeft / 60); 
-            const secs = timeLeft % 60; 
-            globalTimerEl.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`; 
-            if (timeLeft <= 0) { 
-                clearInterval(state.timer); 
-                alert("Waktu habis!"); 
-                finishQuiz(); 
-            } 
-        }, 1000); 
+    function renderReviewScreen() {
+        reviewList.innerHTML = '';
+        QUESTIONS.forEach((q, i) => {
+            const ans = state.playerAnswers[i];
+            const item = document.createElement('div');
+            item.className = 'review-item';
+            let ansHTML = '';
+            if (q.type === 'mcq') {
+                const correctTxt = q.options[q.answer];
+                const playerTxt = ans !== null ? q.options[ans] : "Tidak Dijawab";
+                const isCorrect = ans === q.answer;
+                ansHTML = `<div class="your-answer ${isCorrect ? 'correct' : ''}">Jawaban Anda: ${escapeHtml(playerTxt)}</div> ${!isCorrect ? `<div class="correct-answer">Jawaban Benar: ${escapeHtml(correctTxt)}</div>` : ''}`;
+            } else if (q.type === 'match') {
+                ansHTML = '<div class="review-match-container">';
+                q.match_items.forEach((imgSrc, imgIndex) => {
+                    const playerLabel = ans && ans[imgIndex] ? ans[imgIndex] : "Tidak Dijawab";
+                    const correctLabel = q.match_labels[imgIndex];
+                    const isCorrect = playerLabel === correctLabel;
+                    ansHTML += `<div class="review-match-item"><img src="${imgSrc}" /><div class="your-answer ${isCorrect ? 'correct' : ''}">${escapeHtml(playerLabel)}</div>${!isCorrect ? `<div class="correct-answer">Benar: ${escapeHtml(correctLabel)}</div>` : ''}</div>`;
+                });
+                ansHTML += '</div>';
+            }
+            item.innerHTML = `<div class="q-text"><b>${i+1}. ${escapeHtml(q.q)}</b></div>${ansHTML}`;
+            reviewList.appendChild(item);
+        });
     }
-    
-    function fetchLeaderboard(nodeName, targetEl, btnToShow = null) { 
-        if (btnToShow) btnToShow.style.display = 'none'; 
-        targetEl.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>'; 
-        if (!db) { 
-            targetEl.innerHTML = "<div class='small'>Firebase tidak terkonfigurasi.</div>"; 
-            if (btnToShow) btnToShow.style.display = 'block'; 
-            return; 
-        } 
-        const nodeRef = ref(db, nodeName); 
-        onValue(nodeRef, (snap) => { 
-            const data = snap.val(); 
-            if (!data) { 
-                targetEl.innerHTML = "<div class='small'>Belum ada skor.</div>"; 
-            } else { 
-                const arr = Object.values(data).sort((a, b) => b.score - a.score || a.ts - b.ts); 
-                targetEl.innerHTML = ""; 
-                arr.forEach((it, idx) => { 
-                    const el = document.createElement("div"); 
-                    el.className = "lbItem"; 
-                    el.innerHTML = `<img src="${it.photo}" onerror="this.style.display='none'" /> <div>${idx + 1}. ${escapeHtml(it.name)}</div> <div><b>${it.score}</b></div>`; 
-                    targetEl.appendChild(el); 
-                }); 
-            } 
-            if (btnToShow) btnToShow.style.display = 'block'; 
-        }, { onlyOnce: true }); 
+
+    function renderResults() {
+        const finalScore = TOTAL_POSSIBLE_SCORE > 0 ? Math.round((state.score / TOTAL_POSSIBLE_SCORE) * 100) : 0;
+
+        if (finalScore >= 50) playSound('success');
+        else playSound('fail');
+        finalScoreDisplay.textContent = finalScore;
+        fetchLeaderboard(kelasSelect.value, leaderList, playAgainBtn);
+
+        if (isQuizActive && db) {
+            push(ref(db, kelasSelect.value), {
+                name: playerName.value,
+                score: finalScore,
+                photo: lastPhotoBase64 || "",
+                ts: Date.now()
+            }).catch((err) => console.error(err));
+        }
     }
-    
-    function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-    
+
+    function startGlobalTimer() {
+        let timeLeft = 15 * 60;
+        clearInterval(state.timer);
+        globalTimerEl.textContent = "15:00";
+        state.timer = setInterval(() => {
+            timeLeft--;
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            globalTimerEl.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            if (timeLeft <= 0) {
+                clearInterval(state.timer);
+                alert("Waktu habis!");
+                finishQuiz();
+            }
+        }, 1000);
+    }
+
+    function fetchLeaderboard(nodeName, targetEl, btnToShow = null) {
+        if (btnToShow) btnToShow.style.display = 'none';
+        targetEl.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+        if (!db) {
+            targetEl.innerHTML = "<div class='small'>Firebase tidak terkonfigurasi.</div>";
+            if (btnToShow) btnToShow.style.display = 'block';
+            return;
+        }
+        const nodeRef = ref(db, nodeName);
+        onValue(nodeRef, (snap) => {
+            const data = snap.val();
+            if (!data) {
+                targetEl.innerHTML = "<div class='small'>Belum ada skor.</div>";
+            } else {
+                const arr = Object.values(data).sort((a, b) => b.score - a.score || a.ts - b.ts);
+                targetEl.innerHTML = "";
+                arr.forEach((it, idx) => {
+                    const el = document.createElement("div");
+                    el.className = "lbItem";
+                    el.innerHTML = `<img src="${it.photo}" onerror="this.style.display='none'" /> <div>${idx + 1}. ${escapeHtml(it.name)}</div> <div><b>${it.score}</b></div>`;
+                    targetEl.appendChild(el);
+                });
+            }
+            if (btnToShow) btnToShow.style.display = 'block';
+        }, { onlyOnce: true });
+    }
+
+    function escapeHtml(s) { return String(s).replace(/[&<>\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
     showScreen("welcome");
 });
-
